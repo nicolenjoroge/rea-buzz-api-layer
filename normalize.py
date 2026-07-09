@@ -233,6 +233,13 @@ def normalize_item(item):
         ),
         0
     )
+
+    other_cost_savings = parse_number(
+        get_field(
+            item,
+            ["other_cost_savings"]
+        )
+    )
     
     # Paper savings / Paper and print savings
     paper_savings = parse_number(
@@ -280,19 +287,6 @@ def normalize_item(item):
         ""
     )
     
-    benefits_approved = get_field(
-        item,
-        ["benefits_approved", "Benefits Approved"],
-        ""
-    )
-
-    benefits_validated = get_field(
-        item,
-        ["benefits_validated","Benefits validated by"],
-        ""
-    )
-
-
     # Developer
     developer = get_field(
         item,
@@ -366,6 +360,8 @@ def normalize_item(item):
         "tatReduction": tat_reduction,
         "tat": tat_reduction,  # for compatibility
         "costSavings": cost_savings,
+        "totalCostSavings": cost_savings,
+        "costSavingsDocusign": other_cost_savings,
         "paperSavings": paper_savings,
         "paperPrintSavings": paper_savings,  # for IBPS
         "quant": quant_text,
@@ -376,8 +372,6 @@ def normalize_item(item):
         "processOwner": process_owner,
         "benefitsSigned": benefits_signed,
         "benefitsSignoff": benefits_signed,  # variant
-        "benefitsValidated": benefits_validated,
-        "benefitsApproved": benefits_approved,
         "developer": developer,
         "architect": architect,
         "analyst": analyst,
