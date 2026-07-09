@@ -370,6 +370,8 @@ def get_media_url():
     return jsonify(media_base_url()), 200
 
 
+
+
 # ---------------------------------------------------------------------------
 # INITIATIVES — Cosmos DB CRUD
 # ---------------------------------------------------------------------------
@@ -473,6 +475,27 @@ def delete_initiative(item_id):
         logger.exception("Delete failed for id=%s", item_id)
         return _err("Delete failed", 500)
 
+AUDIT_BLOB = "audit/export-log.json"
+
+@app.post("/api/audit/export")
+def log_export():
+    body = request.get_json(silent=True) or {}
+    
+    try:
+        existing = read_json(AUDIT_BLOB) or []
+        existing.insert(0, {
+            "action":    "export",
+            "stream":    body.get("stream", ""),
+            "records":   body.get("records", 0),
+            "exportedBy": body.get("exportedBy", "unknown"),
+            "exportedAt": _now(),
+        })
+        # Keep last 500 entries
+        write_json(AUDIT_BLOB, existing[:500])
+        return jsonify({"ok": True}), 200
+    except Exception as e:
+        logger.error("audit log failed: %s", e)
+        return jsonify({"ok": False}), 500
 
 # ---------------------------------------------------------------------------
 # Dev server
