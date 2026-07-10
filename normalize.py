@@ -340,7 +340,16 @@ def normalize_item(item):
         ["ai_cluster", "aiCluster", "AI Cluster", ],
         ""
     )
+    benefits_validated = get_field(
+        item,
+        ["benefits_validated", "benefits_validatedby"]
+    )
     
+    benefits_approved = get_field(
+        item,
+        ["benefits_approved", "benefits_approvedby"]
+    )
+
     # Return normalized item with ALL fields
     normalized = {
         "id": item.get("id", ""),
@@ -372,6 +381,8 @@ def normalize_item(item):
         "processOwner": process_owner,
         "benefitsSigned": benefits_signed,
         "benefitsSignoff": benefits_signed,  # variant
+        "benefitsValidated": benefits_validated,
+        "benefitsApproved": benefits_approved,
         "developer": developer,
         "architect": architect,
         "analyst": analyst,
