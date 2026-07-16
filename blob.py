@@ -94,3 +94,9 @@ def media_base_url():
         "baseUrl": f"{BASE}/{MEDIA_CONTAINER}",
         "sas": SAS,
     }
+
+def delete_blob(blob_name: str) -> None:
+    """Delete a blob from the content container."""
+    resp = requests.delete(_content_url(blob_name), timeout=10)
+    if resp.status_code not in (200, 202, 404):  # 404 = already gone, that's fine
+        resp.raise_for_status()

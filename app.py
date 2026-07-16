@@ -219,7 +219,6 @@ def post_publish():
     body         = request.get_json(silent=True) or {}
     published_by = body.get("publishedBy", "unknown")
 
-    # Read draft
     try:
         draft = read_json(DRAFT)
     except Exception as e:
@@ -229,7 +228,6 @@ def post_publish():
     if draft is None:
         return _err("No draft found", 404)
 
-    # Read or initialise manifest
     try:
         manifest = read_json(MANIFEST) or {
             "currentVersion": 0,
@@ -240,12 +238,32 @@ def post_publish():
         logger.error("post_publish read manifest: %s", e)
         return _err("Failed to read manifest", 500)
 
-    # Increment version
+    manifest.setdefault("currentVersion", 0)
+    manifest.setdefault("liveVersion",    0)
+    manifest.setdefault("versions",       [])
+
+    MAX_VERSIONS = 10
+
+    # If we're at the limit, reset counter to 1 and delete the oldest blob
+    if manifest["currentVersion"] >= MAX_VERSIONS:
+        # Find the oldest version in the list
+        if manifest["versions"]:
+            oldest = manifest["versions"][-1]["version"]  # last item = oldest (newest-first list)
+            try:
+                delete_blob(f"published/{oldest}.json")
+                logger.info("Deleted old snapshot: published/%s.json", oldest)
+            except Exception as e:
+                logger.warning("Could not delete old snapshot %s: %s", oldest, e)
+
+        # Reset counter
+        manifest["currentVersion"] = 0
+        manifest["liveVersion"]    = 0
+        manifest["versions"]       = []
+
     n            = manifest["currentVersion"] + 1
     published_at = _now()
     version_tag  = f"v{n}"
 
-    # Write snapshot
     snapshot = {**draft, "version": version_tag,
                 "publishedAt": published_at, "publishedBy": published_by}
     try:
@@ -254,14 +272,14 @@ def post_publish():
         logger.error("post_publish write snapshot: %s", e)
         return _err("Failed to write snapshot", 500)
 
-    # Update manifest
     manifest["currentVersion"] = n
     manifest["liveVersion"]    = n
-    manifest.setdefault("versions", []).insert(0, {
+    manifest["versions"].insert(0, {
         "version":     version_tag,
         "publishedAt": published_at,
         "publishedBy": published_by,
     })
+
     try:
         write_json(MANIFEST, manifest)
     except Exception as e:
