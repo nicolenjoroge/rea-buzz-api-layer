@@ -1,0 +1,23 @@
+# semgrep.toml
+# Configuration for Semgrep SAST — API (Python Backend)
+# Place at repo root alongside app.py
+
+[semgrep]
+
+error_on_findings = false   # set to true when you are ready to enforce blocking
+
+[semgrep.scan]
+include = [
+  "*.py",
+]
+exclude = [
+  ".venv/**",
+  "venv/**",
+  "__pycache__/**",
+  "*.pyc",
+  "tests/**",        # test files — scan separately if needed
+  "migrations/**",
+]
+
+[semgrep.output]
+max_lines_per_finding = 5

@@ -1,0 +1,33 @@
+# .semgrepignore
+# API (Python Backend) repo
+# Semgrep skips everything listed here.
+
+# ── Virtual environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── Python cache ─────────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ── Test files ───────────────────────────────────────────────────────────────
+# Tests may intentionally use unsafe patterns — scan separately if needed.
+tests/
+test_*.py
+*_test.py
+
+# ── Migrations ───────────────────────────────────────────────────────────────
+migrations/
+
+# ── CI / tooling output ──────────────────────────────────────────────────────
+semgrep.sarif
+bandit.sarif
+pip-audit-results.json
+
+# ── Local dev files ──────────────────────────────────────────────────────────
+# Never commit .env but ignore it here too just in case
+.env
+.env.example
