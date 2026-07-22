@@ -50,6 +50,12 @@ app = Flask(__name__)
 # Local dev: allow Live Server on 5500 and plain localhost
 # Production: set ALLOWED_ORIGIN env var to your Static Web App URL
 #             e.g. ALLOWED_ORIGIN=https://rea-buzz.azurestaticapps.net
+
+# Prevent debug mode from ever being enabled in production
+if os.environ.get("FLASK_ENV") != "development" and os.environ.get("FLASK_DEBUG"):
+    raise RuntimeError("FLASK_DEBUG must not be set in production")
+
+
 _PROD_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "")
 _ORIGINS = (
     [o.strip() for o in _PROD_ORIGINS.split(",") if o.strip()]
@@ -520,5 +526,6 @@ def log_export():
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(debug=True, port=port)
+    port  = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_ENV", "production") == "development"
+    app.run(debug=debug, port=port)
