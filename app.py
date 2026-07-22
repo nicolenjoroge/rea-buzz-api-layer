@@ -36,7 +36,7 @@ from datetime import datetime, timezone
 from flask import Flask, Response, jsonify, request
 from flask_cors import CORS
 
-from blob import list_media, media_base_url, read_json, write_json
+from blob import list_media, media_base_url, read_json, write_json, delete_blob
 from database import get_container
 from normalize import normalize_item, get_field
 
