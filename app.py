@@ -28,7 +28,7 @@ import os
 from flask import Flask
 from flask_cors import CORS
 
-from contentdraft import get_draft, put_draft, get_versions, post_publish, post_rollback, get_media_list, get_media_url 
+from contentdraft import get_draft, put_draft, get_versions, post_publish, post_rollback, get_media_list, get_media_url, post_discard 
 from cors import init_cors
 
 # ---------------------------------------------------------------------------
@@ -110,6 +110,13 @@ def api_post_publish():
 def api_post_rollback():
     return post_rollback()
 
+
+# ---------------------------------------------------------------------------
+# POST /api/discard
+# ---------------------------------------------------------------------------
+@app.post("/api/discard")
+def api_post_discard():
+    return post_discard()
 
 # ---------------------------------------------------------------------------
 # GET /api/media-list

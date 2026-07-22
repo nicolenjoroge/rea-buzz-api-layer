@@ -221,6 +221,39 @@ def post_rollback():
     }), 200
 
 
+def post_discard():
+    """
+    Reverts draft/page.json to the current live published version.
+    Unlike rollback, does NOT update manifest.liveVersion —
+    the live site continues serving the same version unchanged.
+    """
+    body    = request.get_json(silent=True) or {}
+    version = body.get("version", "")
+
+    if not re.fullmatch(r"v\d+", version):
+        return _err('version must be "v1", "v2", etc.')
+
+    try:
+        snapshot = read_json(f"published/{version}.json")
+    except Exception as e:
+        logger.error("post_discard: %s", e)
+        return _err("Failed to read snapshot", 500)
+
+    if snapshot is None:
+        return _err(f"published/{version}.json not found", 404)
+
+    # Strip snapshot metadata and restore as draft
+    content = {k: v for k, v in snapshot.items()
+               if k not in ("version", "publishedAt", "publishedBy")}
+    content["lastSavedAt"] = _now()
+
+    try:
+        write_json(DRAFT, content)
+    except Exception as e:
+        logger.error("post_discard write draft: %s", e)
+        return _err("Failed to restore draft", 500)
+
+    return jsonify(content), 200
 # ---------------------------------------------------------------------------
 # Get ALL media from media container
 # ---------------------------------------------------------------------------
