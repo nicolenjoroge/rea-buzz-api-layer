@@ -29,7 +29,7 @@ from flask import Flask
 from flask_cors import CORS
 
 from contentdraft import get_draft, put_draft, get_versions, post_publish, post_rollback, get_media_list, get_media_url 
-
+from cors import init_cors
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -37,6 +37,10 @@ from contentdraft import get_draft, put_draft, get_versions, post_publish, post_
 
 app = Flask(__name__)
 
+# ---------------------------------------------------------------------------
+# Setup CORS
+# ---------------------------------------------------------------------------
+init_cors(app)
 
 # ---------------------------------------------------------------------------
 # Prevent Debug enabled on Production
@@ -58,23 +62,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# CORS setup
-# ---------------------------------------------------------------------------
-_PROD_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "")
-_ORIGINS = (
-    [o.strip() for o in _PROD_ORIGINS.split(",") if o.strip()]
-    if _PROD_ORIGINS
-    else [
-        "null",
-    ]
-)
 
-CORS(app, resources={r"/api/*": {
-    "origins":       _ORIGINS,
-    "methods":       ["GET", "PUT", "POST", "OPTIONS", "DELETE", "PATCH"],
-    "allow_headers": ["Content-Type"],
-}})
 
 
 
