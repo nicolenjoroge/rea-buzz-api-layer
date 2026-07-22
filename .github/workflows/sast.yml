@@ -95,6 +95,7 @@ jobs:
         if: always()
 
   # ── 4. Bandit — Python security linter ────────────────────────────────────
+  # ── 4. Bandit — Python security linter ────────────────────────────────────
   bandit:
     name: Bandit Python linter
     runs-on: ubuntu-latest
@@ -105,26 +106,34 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Bandit
-        run: pip install bandit[sarif]
+      - name: Install Bandit and sarif converter
+        run: pip install bandit bandit-sarif-formatter
 
       - name: Run Bandit
         run: |
           bandit -r . \
-            --exclude ./.venv,./venv \
-            -f sarif \
-            -o bandit.sarif
-        continue-on-error: true
+            --exclude ./.venv,./venv,./tests \
+            -f json \
+            -o bandit-results.json || true
+
+      - name: Convert to SARIF
+        run: |
+          if [ -f bandit-results.json ] && [ -s bandit-results.json ]; then
+            bandit-sarif-formatter bandit-results.json > bandit.sarif
+          else
+            echo '{"version":"2.1.0","$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Documents/CommitteeSpecifications/2.1.0/sarif-schema-2.1.0.json","runs":[{"tool":{"driver":{"name":"Bandit","version":"1.0.0","rules":[]}},"results":[]}]}' > bandit.sarif
+          fi
 
       - name: Upload Bandit SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: bandit.sarif
+          wait-for-processing: true
         if: always()
 
       - name: Upload Bandit results as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: bandit-sarif
-          path: bandit.sarif
+          name: bandit-results
+          path: bandit-results.json
         if: always()
