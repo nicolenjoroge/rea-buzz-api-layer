@@ -9,15 +9,17 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 _ENV = os.environ.get("FLASK_ENV", "production").lower()
 
-# _PROD_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "")
+_PROD_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "")
 
-# if _PROD_ORIGINS:
-#     _ORIGINS = [o.strip() for o in _PROD_ORIGINS.split(",") if o.strip()]
-# elif _ENV == "development":
-#     _ORIGINS = ["http://localhost:5000", "http://127.0.0.1:5000"]  # adjust port as needed
-# else:
-#     # No origins configured in production — fail loudly
-#     raise RuntimeError("ALLOWED_ORIGINS must be set in staging/production")
+if _PROD_ORIGINS:
+    raw = [o.strip() for o in _PROD_ORIGINS.split(",") if o.strip()]
+    # If the only entry is *, pass it as a bare string not a list
+    _ORIGINS = "*" if raw == ["*"] else raw
+elif _ENV == "development":
+    _ORIGINS = ["http://localhost:5000", "http://127.0.0.1:5000"]
+else:
+    logger.warning("ALLOWED_ORIGINS not set — defaulting to wildcard.")
+    _ORIGINS = "*"
 
 _ORIGINS = "*"
 logger.info("CORS origins: %s", _ORIGINS)
