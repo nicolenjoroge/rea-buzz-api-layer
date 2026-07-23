@@ -106,23 +106,23 @@ def api_post_discard():
 # Media proxy routes  (SAS token never leaves the server)
 # ---------------------------------------------------------------------------
 
-@app.get("/api/media/list")
+@app.get("/api/media-list")
 def api_get_media_list():
     return get_media_list()
 
 
-@app.get("/api/media/file/<path:name>")
+@app.get("/api/media-file/<path:name>")
 def api_get_media_file(name: str):
     return get_media_file(name)
 
 
-@app.post("/api/media/upload")
+@app.post("/api/media-upload")
 def api_post_media_upload():
     return post_media_upload()
 
 # app.py — add this route alongside the other media routes
 
-@app.delete("/api/media/delete")
+@app.delete("/api/media-delete")
 def api_delete_media_file():
     return delete_media_file()
 
