@@ -33,7 +33,7 @@ from contentdraft import (
     get_draft, put_draft, get_versions,
     post_publish, post_rollback, post_discard,
 )
-from media import get_media_list, get_media_file, post_media_upload
+from media import get_media_list, get_media_file, post_media_upload, delete_media_file
 from cors import init_cors
 
 # ---------------------------------------------------------------------------
@@ -120,6 +120,11 @@ def api_get_media_file(name: str):
 def api_post_media_upload():
     return post_media_upload()
 
+# app.py — add this route alongside the other media routes
+
+@app.delete("/api/media/delete")
+def api_delete_media_file():
+    return delete_media_file()
 
 # ---------------------------------------------------------------------------
 # Dev server

@@ -173,3 +173,29 @@ def post_media_upload():
         "url":      f"/api/media/file/{blob_name}",
         "size":     len(data),
     }), 201
+
+
+# media.py — add this function
+
+def delete_media_file():
+    """
+    Delete a blob from the media container.
+    Called by the frontend — name comes from the request body, never from the URL.
+    """
+    body = request.get_json(silent=True) or {}
+    name = body.get("name", "")
+
+    if not name or ".." in name or name.startswith("/"):
+        return _err("Invalid file name", 400)
+
+    azure_url = _media_url(name)
+    try:
+        resp = requests.delete(azure_url, timeout=10)
+        if resp.status_code not in (200, 202, 404):
+            resp.raise_for_status()
+    except Exception as e:
+        logger.error("delete_media_file [%s]: %s", name, e)
+        return _err("Failed to delete file", 500)
+
+    logger.info("Deleted media: %s", name)
+    return jsonify({"message": "Deleted", "name": name}), 200
