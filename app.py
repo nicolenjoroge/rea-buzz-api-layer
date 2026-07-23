@@ -12,16 +12,14 @@ Blob layout:
     videos/...
 
 Routes:
-  GET  /api/draft                  — return draft/page.json
-  PUT  /api/draft                  — save draft/page.json
-  GET  /api/versions               — return manifest.json
-  POST /api/publish                — snapshot draft → published/v{n}.json, update manifest
-  POST /api/rollback               — restore published/v{n}.json → draft, flip liveVersion
-  POST /api/discard                — revert draft to current live version
+  GET  /api/draft       — return draft/page.json
+  PUT  /api/draft       — save draft/page.json
+  GET  /api/versions    — return manifest.json
+  POST /api/publish     — snapshot draft → published/v{n}.json, update manifest
+  POST /api/rollback    — restore published/v{n}.json → draft, flip liveVersion
+  GET  /api/media-list  — list blobs in media container (returns XML)
+  GET  /api/media-url   — return base URL + SAS for media files
 
-  GET  /api/media/list             — list media blobs (clean JSON, no SAS exposed)
-  GET  /api/media/file/<path:name> — stream a media file (proxied, no SAS in URL)
-  POST /api/media/upload           — upload a file to Azure via the backend proxy
 """
 
 import logging
@@ -29,11 +27,7 @@ import os
 
 from flask import Flask
 
-from contentdraft import (
-    get_draft, put_draft, get_versions,
-    post_publish, post_rollback, post_discard,
-)
-from media import get_media_list, get_media_file, post_media_upload, delete_media_file
+from contentdraft import get_draft, put_draft, get_versions, post_publish, post_rollback, get_media_list, get_media_url, post_discard 
 from cors import init_cors
 
 # ---------------------------------------------------------------------------
@@ -42,22 +36,20 @@ from cors import init_cors
 
 app = Flask(__name__)
 
-# Limit incoming request bodies (guards PUT /api/draft and upload routes)
-app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB (media upload ceiling)
-
 # ---------------------------------------------------------------------------
 # Setup CORS
 # ---------------------------------------------------------------------------
 init_cors(app)
 
 # ---------------------------------------------------------------------------
-# Prevent debug mode in production
+# Prevent Debug enabled on Production
 # ---------------------------------------------------------------------------
 if os.environ.get("FLASK_ENV") != "development" and os.environ.get("FLASK_DEBUG"):
     raise RuntimeError("FLASK_DEBUG must not be set in production")
 
+
 # ---------------------------------------------------------------------------
-# Logging
+# Logging Setup
 # ---------------------------------------------------------------------------
 LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
@@ -65,11 +57,16 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
 logger = logging.getLogger(__name__)
 
 
+
+
+
+
 # ---------------------------------------------------------------------------
-# Content routes
+# GET /api/draft
 # ---------------------------------------------------------------------------
 
 @app.get("/api/draft")
@@ -77,54 +74,66 @@ def api_get_draft():
     return get_draft()
 
 
+# ---------------------------------------------------------------------------
+# PUT /api/draft
+# ---------------------------------------------------------------------------
+
 @app.put("/api/draft")
 def api_put_draft():
     return put_draft()
 
+
+# ---------------------------------------------------------------------------
+# GET /api/versions
+# ---------------------------------------------------------------------------
 
 @app.get("/api/versions")
 def api_get_versions():
     return get_versions()
 
 
+# ---------------------------------------------------------------------------
+# POST /api/publish
+# ---------------------------------------------------------------------------
+
 @app.post("/api/publish")
 def api_post_publish():
     return post_publish()
 
+
+# ---------------------------------------------------------------------------
+# POST /api/rollback
+# ---------------------------------------------------------------------------
 
 @app.post("/api/rollback")
 def api_post_rollback():
     return post_rollback()
 
 
+# ---------------------------------------------------------------------------
+# POST /api/discard
+# ---------------------------------------------------------------------------
 @app.post("/api/discard")
 def api_post_discard():
     return post_discard()
 
-
 # ---------------------------------------------------------------------------
-# Media proxy routes  (SAS token never leaves the server)
+# GET /api/media-list
 # ---------------------------------------------------------------------------
 
 @app.get("/api/media-list")
-def api_get_media_list():
+def api_get_medialist():
     return get_media_list()
 
 
-@app.get("/api/media-file/<path:name>")
-def api_get_media_file(name: str):
-    return get_media_file(name)
+# ---------------------------------------------------------------------------
+# GET /api/media-url
+# ---------------------------------------------------------------------------
 
+@app.get("/api/media-url")
+def api_get_mediaurl():
+    return get_media_url()
 
-@app.post("/api/media-upload")
-def api_post_media_upload():
-    return post_media_upload()
-
-# app.py — add this route alongside the other media routes
-
-@app.delete("/api/media-delete")
-def api_delete_media_file():
-    return delete_media_file()
 
 # ---------------------------------------------------------------------------
 # Dev server

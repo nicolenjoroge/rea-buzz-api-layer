@@ -4,21 +4,16 @@ Handles all reads and writes to Azure Blob Storage.
 Uses the requests library — no Azure SDK needed.
 
 Environment variables (set in .env):
-  AZURE_STORAGE_ACCOUNT   — storage account name
-  AZURE_STORAGE_SAS_TOKEN — SAS token (covers both containers)
-  CONTENT_CONTAINER       — container holding content (manifest, draft, published)
-  MEDIA_CONTAINER         — container holding media (images, videos)
-
-Note: the SAS token is used only server-side. It is never returned to a caller.
-All media access is proxied through media.py.
+  AZURE_STORAGE_ACCOUNT  — storage account name
+  AZURE_STORAGE_SAS_TOKEN — SAS token (same one covers both containers)
+  CONTENT_CONTAINER       — Container with the content
+  MEDIA_CONTAINER         — Container with the media
 """
 
-import json
 import os
-
 import requests
 from dotenv import load_dotenv
-
+import json
 load_dotenv()
 
 ACCOUNT           = os.environ["AZURE_STORAGE_ACCOUNT"]
@@ -33,11 +28,11 @@ BASE = f"https://{ACCOUNT}.blob.core.windows.net"
 # Content container  (manifest, draft, published)
 # ---------------------------------------------------------------------------
 
-def _content_url(blob_name: str) -> str:
+def _content_url(blob_name):
     return f"{BASE}/{CONTENT_CONTAINER}/{blob_name}?{SAS}"
 
 
-def read_json(blob_name: str):
+def read_json(blob_name):
     """
     Read a blob from the content container and parse as JSON.
     Returns None if the blob does not exist (404).
@@ -50,7 +45,7 @@ def read_json(blob_name: str):
     return resp.json()
 
 
-def write_json(blob_name: str, data: dict) -> None:
+def write_json(blob_name, data):
     """
     Write a dict as JSON to a blob in the content container.
     Creates the blob if it doesn't exist, overwrites if it does.
@@ -61,25 +56,35 @@ def write_json(blob_name: str, data: dict) -> None:
         data=body,
         headers={
             "x-ms-blob-type": "BlockBlob",
-            "Content-Type":   "application/json; charset=utf-8",
+            "Content-Type": "application/json; charset=utf-8",
         },
         timeout=30,
     )
     resp.raise_for_status()
 
+def list_media():
+    """
+    List all blobs in the media container.
+    Returns the raw XML response text from Azure.
+    """
+    url = f"{BASE}/{MEDIA_CONTAINER}?restype=container&comp=list&{SAS}"
+    resp = requests.get(url, timeout=10)
+    resp.raise_for_status()
+    return resp.text
+
+
+def media_base_url():
+    """
+    Returns the base URL and SAS token for the media container.
+    The frontend uses these to build <img> and <video> src URLs.
+    """
+    return {
+        "baseUrl": f"{BASE}/{MEDIA_CONTAINER}",
+        "sas": SAS,
+    }
 
 def delete_blob(blob_name: str) -> None:
     """Delete a blob from the content container."""
     resp = requests.delete(_content_url(blob_name), timeout=10)
     if resp.status_code not in (200, 202, 404):  # 404 = already gone, that's fine
         resp.raise_for_status()
-
-
-# ---------------------------------------------------------------------------
-# Removed: list_media() and media_base_url()
-#
-# These functions previously returned raw Azure XML and the SAS token to
-# callers, which exposed storage credentials to the browser.
-# All media operations are now handled in media.py via proxy routes that
-# keep the SAS token server-side at all times.
-# ---------------------------------------------------------------------------
