@@ -224,7 +224,7 @@ def post_rollback():
 def post_discard():
     """
     Reverts draft/page.json to the current live published version.
-    Unlike rollback, does NOT update manifest.liveVersion —
+    Unlike rollback, does NOT update  vmanifest.liveVersion —
     the live site continues serving the same version unchanged.
     """
     body    = request.get_json(silent=True) or {}
