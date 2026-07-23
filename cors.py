@@ -13,27 +13,34 @@ _PROD_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "")
 
 if _PROD_ORIGINS:
     raw = [o.strip() for o in _PROD_ORIGINS.split(",") if o.strip()]
-    # If the only entry is *, pass it as a bare string not a list
     _ORIGINS = "*" if raw == ["*"] else raw
 elif _ENV == "development":
-    _ORIGINS = ["http://localhost:5000", "http://127.0.0.1:5000"]
+    # All local dev origins — Live Server, plain localhost, file://
+    _ORIGINS = [
+        "http://localhost:5500",
+        "http://127.0.0.1:5500",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5000",
+        "http://127.0.0.1:5000",
+        "null",   # file:// origin
+    ]
 else:
-    logger.warning("ALLOWED_ORIGINS not set — defaulting to wildcard.")
+    logger.warning("ALLOWED_ORIGINS not set and not in development — defaulting to wildcard.")
     _ORIGINS = "*"
 
-_ORIGINS = "*"
 logger.info("CORS origins: %s", _ORIGINS)
 
 # ---------------------------------------------------------------------------
 # CORS config
 # ---------------------------------------------------------------------------
 _CORS_CONFIG = {
-    "origins":        _ORIGINS,
-    "methods":        ["GET", "PUT", "POST", "DELETE"],       # only what your routes actually use
-    "allow_headers":  ["Content-Type"],             # no Authorization needed
-    "expose_headers": [],
-    "supports_credentials": False,                  # no cookies/auth headers
-    "max_age":        600,                          # preflight cache: 10 min
+    "origins":            _ORIGINS,
+    "methods":            ["GET", "PUT", "POST", "DELETE", "OPTIONS"],  # OPTIONS required for preflight
+    "allow_headers":      ["Content-Type", "Authorization"],            # Authorization needed for JWT
+    "expose_headers":     ["Content-Type", "Content-Length"],
+    "supports_credentials": False,
+    "max_age":            600,                                          # preflight cache: 10 min
 }
 
 def init_cors(app):

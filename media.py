@@ -15,7 +15,7 @@ import xml.etree.ElementTree as ET
 import requests
 from flask import Response, jsonify, request, stream_with_context
 
-from blob import ACCOUNT, SAS, MEDIA_CONTAINER, BASE
+from blob import SAS, MEDIA_CONTAINER, BASE
 from helpers import _err
 
 logger = logging.getLogger(__name__)
@@ -27,7 +27,7 @@ ALLOWED_EXTENSIONS = {
     "jpg", "jpeg", "png", "gif", "webp", "svg",   # images
     "mp4", "webm", "mov", "avi",                    # videos
 }
-MAX_UPLOAD_BYTES = 500 * 1024 * 1024  # 100 MB
+MAX_UPLOAD_BYTES = 500 * 1024 * 1024  # 500 MB
 
 
 def _media_url(blob_name: str) -> str:
