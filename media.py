@@ -27,7 +27,7 @@ ALLOWED_EXTENSIONS = {
     "jpg", "jpeg", "png", "gif", "webp", "svg",   # images
     "mp4", "webm", "mov", "avi",                    # videos
 }
-MAX_UPLOAD_BYTES = 500 * 1024 * 1024  # 500 MB
+MAX_UPLOAD_BYTES = 100 * 1024 * 1024  # 500 MB
 
 
 def _media_url(blob_name: str) -> str:
