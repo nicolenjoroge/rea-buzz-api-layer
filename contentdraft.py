@@ -7,7 +7,7 @@ import re
 from flask import Response, jsonify, request
 from blob import list_media, media_base_url, read_json, write_json, delete_blob
 from helpers import _now, _err
-
+import base64, json as _json
 
 #Log Actions
 logger = logging.getLogger(__name__)
@@ -18,23 +18,23 @@ MANIFEST = "manifest.json"
 AUDIT = "audit/export-log.json"
 
 def _get_caller():
-    """
-    Extract the logged-in user from the SWA client principal header.
-    SWA passes X-MS-CLIENT-PRINCIPAL as a base64-encoded JSON object.
-    Falls back to request body publishedBy if header not present (local dev).
-    """
-    import base64, json as _json
-    header = request.headers.get('X-MS-CLIENT-PRINCIPAL')
-    if header:
+
+    # Bearer token from MSAL
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        token = auth_header.split(' ', 1)[1]
         try:
-            decoded = base64.b64decode(header).decode('utf-8')
-            principal = _json.loads(decoded)
-            return principal.get('userDetails', 'unknown')
+            
+            padding = 4 - len(token.split('.')[1]) % 4
+            payload = base64.b64decode(token.split('.')[1] + '=' * padding)
+            claims  = _json.loads(payload)
+            return claims.get('name') or claims.get('preferred_username') or claims.get('upn') or 'unknown'
         except Exception:
             pass
+
     # Fallback for local dev — read from request body
     body = request.get_json(silent=True) or {}
-    return body.get('publishedBy') or body.get('rolledBackBy') or 'unknown'
+    return body.get('publishedBy') or body.get('rolledBackBy') or body.get('user') or 'unknown'
 
 
 # ---------------------------------------------------------------------------
