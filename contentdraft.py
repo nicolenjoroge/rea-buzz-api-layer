@@ -15,6 +15,26 @@ logger = logging.getLogger(__name__)
 #Draft and manifest name
 DRAFT    = "draft/page.json"
 MANIFEST = "manifest.json"
+AUDIT = "audit/export-log.json"
+
+def _get_caller():
+    """
+    Extract the logged-in user from the SWA client principal header.
+    SWA passes X-MS-CLIENT-PRINCIPAL as a base64-encoded JSON object.
+    Falls back to request body publishedBy if header not present (local dev).
+    """
+    import base64, json as _json
+    header = request.headers.get('X-MS-CLIENT-PRINCIPAL')
+    if header:
+        try:
+            decoded = base64.b64decode(header).decode('utf-8')
+            principal = _json.loads(decoded)
+            return principal.get('userDetails', 'unknown')
+        except Exception:
+            pass
+    # Fallback for local dev — read from request body
+    body = request.get_json(silent=True) or {}
+    return body.get('publishedBy') or body.get('rolledBackBy') or 'unknown'
 
 
 # ---------------------------------------------------------------------------
@@ -76,7 +96,7 @@ def get_versions():
 # ---------------------------------------------------------------------------
 def post_publish():
     body         = request.get_json(silent=True) or {}
-    published_by = body.get("publishedBy", "unknown")
+    published_by = _get_caller()
 
     try:
         draft = read_json(DRAFT)
@@ -160,7 +180,8 @@ def post_publish():
 def post_rollback():
     body           = request.get_json(silent=True) or {}
     version        = body.get("version", "")
-    rolled_back_by = body.get("rolledBackBy", "unknown")
+    rolled_back_by = _get_caller()
+
 
     if not re.fullmatch(r"v\d+", version):
         return _err('version must be "v1", "v2", etc.')
@@ -272,3 +293,36 @@ def get_media_list():
 # ---------------------------------------------------------------------------
 def get_media_url():
     return jsonify(media_base_url()), 200
+
+
+# ---------------------------------------------------------------------------
+# TRACK USERS IN THE ADMIN PORTAL
+# ---------------------------------------------------------------------------
+def log_access():
+    """Called on portal boot to log who accessed the portal."""
+    try:
+        user    = _get_caller()
+        existing = read_json(AUDIT) or []
+        existing.insert(0, {
+            "action":     "access",
+            "user":       user,
+            "accessedAt": _now(),
+            "ip":         request.remote_addr,
+        })
+        write_json(AUDIT, existing[:500])
+        return jsonify({"ok": True}), 200
+    except Exception as e:
+        logger.error("access log failed: %s", e)
+        return jsonify({"ok": False}), 500
+
+
+# ---------------------------------------------------------------------------
+# RETURN AUDIT LOG
+# ---------------------------------------------------------------------------
+def get_audit_log():
+    try:
+        entries = read_json(AUDIT) or []
+        return jsonify(entries), 200
+    except Exception as e:
+        logger.error("get_audit_log: %s", e)
+        return _err("Failed to read audit log", 500)

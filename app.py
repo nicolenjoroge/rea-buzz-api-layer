@@ -27,7 +27,7 @@ import os
 
 from flask import Flask
 
-from contentdraft import get_draft, put_draft, get_versions, post_publish, post_rollback, get_media_list, get_media_url, post_discard 
+from contentdraft import get_draft, put_draft, get_versions, post_publish, post_rollback, get_media_list, get_media_url, post_discard, log_access, get_audit_log 
 from cors import init_cors
 
 # ---------------------------------------------------------------------------
@@ -62,7 +62,19 @@ logger = logging.getLogger(__name__)
 
 
 
+@app.get("/api/audit-log")
+def api_get_audit_log():
+    return get_audit_log()
 
+
+# ---------------------------------------------------------------------------
+# """Log user access to the admin portal."""
+# ---------------------------------------------------------------------------
+
+@app.post("/api/audit-access")
+def api_post_audit():
+    
+    return log_access()
 
 
 # ---------------------------------------------------------------------------

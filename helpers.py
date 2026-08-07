@@ -14,3 +14,4 @@ def _now():
 #Set error message
 def _err(msg, status=400, **extra):
     return jsonify({"error": msg, **extra}), status
+
