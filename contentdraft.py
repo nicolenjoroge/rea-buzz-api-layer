@@ -34,23 +34,36 @@ def debug_token():
 
     
 def _get_caller():
+    import base64, json as _json
 
-    # Bearer token from MSAL
     auth_header = request.headers.get('Authorization', '')
     if auth_header.startswith('Bearer '):
         token = auth_header.split(' ', 1)[1]
         try:
-            
-            padding = 4 - len(token.split('.')[1]) % 4
-            payload = base64.b64decode(token.split('.')[1] + '=' * padding)
-            claims  = _json.loads(payload)
-            return claims.get('name') or claims.get('preferred_username') or claims.get('upn') or 'unknown'
-        except Exception:
-            pass
+            # Get the payload part (second segment)
+            parts = token.split('.')
+            if len(parts) >= 2:
+                # Add padding until length is multiple of 4
+                payload_b64 = parts[1]
+                payload_b64 += '=' * (4 - len(payload_b64) % 4)
+                payload = base64.urlsafe_b64decode(payload_b64)  # urlsafe not standard
+                claims  = _json.loads(payload)
+                name = claims.get('name') or \
+                       claims.get('preferred_username') or \
+                       claims.get('upn') or \
+                       claims.get('unique_name') or \
+                       'unknown'
+                logger.info("Caller identified: %s", name)
+                return name
+        except Exception as e:
+            logger.error("Token decode error: %s", e)
 
-    # Fallback for local dev — read from request body
+    # Fallback for local dev
     body = request.get_json(silent=True) or {}
-    return body.get('publishedBy') or body.get('rolledBackBy') or body.get('user') or 'unknown'
+    return body.get('publishedBy') or \
+           body.get('rolledBackBy') or \
+           body.get('user') or \
+           'unknown'
 
 
 # ---------------------------------------------------------------------------

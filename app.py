@@ -77,7 +77,6 @@ def api_get_audit_log():
 
 @app.post("/api/audit-access")
 def api_post_audit():
-    
     return log_access()
 
 
