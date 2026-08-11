@@ -27,7 +27,7 @@ logger.info("CORS origins: %s", _ORIGINS)
 _CORS_CONFIG = {
     "origins":        _ORIGINS,
     "methods":        ["GET", "PUT", "POST", "DELETE"],       # only what your routes actually use
-    "allow_headers":  ["Content-Type"],             # no Authorization needed
+    "allow_headers":  ["Content-Type", "Authorization"],        
     "expose_headers": [],
     "supports_credentials": False,                  # no cookies/auth headers
     "max_age":        600,                          # preflight cache: 10 min
