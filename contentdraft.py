@@ -17,6 +17,22 @@ DRAFT    = "draft/page.json"
 MANIFEST = "manifest.json"
 AUDIT = "audit/export-log.json"
 
+
+def debug_token():
+    import base64, json as _json
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return jsonify({"error": "No Bearer token"}), 401
+    try:
+        token   = auth_header.split(' ', 1)[1]
+        padding = 4 - len(token.split('.')[1]) % 4
+        payload = base64.b64decode(token.split('.')[1] + '=' * padding)
+        claims  = _json.loads(payload)
+        return jsonify(claims), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    
 def _get_caller():
 
     # Bearer token from MSAL

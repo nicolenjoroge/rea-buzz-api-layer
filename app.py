@@ -27,7 +27,7 @@ import os
 
 from flask import Flask
 
-from contentdraft import get_draft, put_draft, get_versions, post_publish, post_rollback, get_media_list, get_media_url, post_discard, log_access, get_audit_log 
+from contentdraft import debug_token, get_draft, put_draft, get_versions, post_publish, post_rollback, get_media_list, get_media_url, post_discard, log_access, get_audit_log 
 from cors import init_cors
 
 # ---------------------------------------------------------------------------
@@ -61,7 +61,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+@app.get("/api/debug-token")
+def api_debug_token():
+    return debug_token()
 
+    
 @app.get("/api/audit-log")
 def api_get_audit_log():
     return get_audit_log()
