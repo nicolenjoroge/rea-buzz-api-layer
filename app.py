@@ -61,10 +61,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@app.get("/api/debug-token")
-def api_debug_token():
-    return debug_token()
-
     
 @app.get("/api/audit-log")
 def api_get_audit_log():
