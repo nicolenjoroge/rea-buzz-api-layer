@@ -35,8 +35,8 @@ log = logging.getLogger("dashboard")
 # ---------------------------------------------------------------------------
 
 ENDPOINT       = os.getenv("COSMOS_ENDPOINT")
-DB_NAME        = os.getenv("DATABASE_NAME")
-CONTAINER_NAME = os.getenv("CONTAINER_NAME")
+DB_NAME = os.environ.get("DATABASE_NAME") or os.environ.get("COSMOS_DB")
+CONTAINER_NAME = os.getenv("CONTAINER_NAME") or os.environ.get("COSMOS_CONTAINER")
 
 # ---------------------------------------------------------------------------
 # Thread-safe singletons
@@ -57,12 +57,7 @@ def get_client() -> CosmosClient:
                     raise RuntimeError(
                         "Missing COSMOS_ENDPOINT — set it in App Service Configuration"
                     )
-                # DefaultAzureCredential tries in order:
-                #   1. Environment variables (CI/CD)
-                #   2. Managed Identity (App Service in production)
-                #   3. Azure CLI (local dev via `az login`)
-                #   4. VS Code / IntelliJ credentials
-                # No code change needed between local and production.
+                
                 _client = CosmosClient(
                     url=ENDPOINT,
                     credential=DefaultAzureCredential(),
