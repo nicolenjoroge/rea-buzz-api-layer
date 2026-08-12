@@ -27,7 +27,7 @@ import os
 
 from flask import Flask
 
-from contentdraft import validate_user, get_draft, put_draft, get_versions, post_publish, post_rollback, get_media_list, get_media_url, post_discard, log_access, get_audit_log 
+from contentdraft import get_draft, put_draft, get_versions, post_publish, post_rollback, get_media_list, get_media_url, post_discard, log_access, get_audit_log 
 from cors import init_cors
 
 # ---------------------------------------------------------------------------
@@ -61,13 +61,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-
-@app.post("/api/auth-validate")
-def api_validate_user():
-    """
-    Validate user credentials.
-    """
-    return validate_user()
 
      
 @app.get("/api/audit-log")
