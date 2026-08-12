@@ -60,12 +60,12 @@ def validate_user():
     try:
         container = get_container()
         items = list(container.query_items(
-            query="""SELECT * FROM c 
+            query="""SELECT c.name, c.email, c.active FROM c 
                      WHERE c.type = 'portalUser' 
-                     AND c.email = @email 
+                     AND LOWER(c.email) = @email 
                      AND c.active = true""",
             parameters=[{"name": "@email", "value": email}],
-            enable_cross_partition_query=True,
+            partition_key="PORTALUSERS",   # direct partition — fast, no scan
         ))
         if items:
             logger.info("Access granted: %s", email)

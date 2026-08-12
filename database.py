@@ -1,21 +1,12 @@
 """
 database.py
 -----------
-Thread-safe Cosmos DB client using Managed Identity (passwordless).
+Thread-safe Cosmos DB client using connection string.
 
-No connection strings or secrets needed — Azure handles auth automatically.
-
-Local dev:  run `az login` once, DefaultAzureCredential picks it up
-Production: enable System-assigned Managed Identity on the App Service,
-            then grant it "Cosmos DB Built-in Data Contributor" role
-            in the Cosmos DB account → Data Explorer → Settings
-
-Environment variables (App Service → Configuration):
-  COSMOS_ENDPOINT   — e.g. https://your-account.documents.azure.com:443/
-  DATABASE_NAME     — Cosmos database name
-  CONTAINER_NAME    — default container (can be overridden per-call)
-
-No COSMOS_CONNECTION_STRING or keys needed.
+Environment variables:
+    COSMOS_CONNECTION_STRING  — from Azure Portal → Cosmos DB → Keys → Primary Connection String
+    DATABASE_NAME             — your Cosmos database name
+    CONTAINER_NAME            — default container (bpmcontent)
 """
 
 import logging
@@ -23,20 +14,19 @@ import os
 import threading
 
 from azure.cosmos import CosmosClient, exceptions
-from azure.identity import DefaultAzureCredential
 from dotenv import load_dotenv
 
 load_dotenv()
 
-log = logging.getLogger("dashboard")
+log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
 
-ENDPOINT       = os.getenv("COSMOS_ENDPOINT")
-DB_NAME = os.environ.get("DATABASE_NAME") or os.environ.get("COSMOS_DB")
-CONTAINER_NAME = os.getenv("CONTAINER_NAME") or os.environ.get("COSMOS_CONTAINER")
+CONNECTION_STRING = os.environ.get("COSMOS_CONNECTION_STRING")
+DB_NAME           = os.environ.get("COSMOS_DB")
+CONTAINER_NAME    = os.environ.get("CONTAINER_NAME") or os.environ.get("COSMOS_CONTAINER")  # legacy env var
 
 # ---------------------------------------------------------------------------
 # Thread-safe singletons
@@ -45,24 +35,20 @@ CONTAINER_NAME = os.getenv("CONTAINER_NAME") or os.environ.get("COSMOS_CONTAINER
 _lock       = threading.Lock()
 _client     = None
 _database   = None
-_containers = {}   # cache by container name
+_containers = {}
 
 
 def get_client() -> CosmosClient:
     global _client
     if _client is None:
         with _lock:
-            if _client is None:  # double-checked locking
-                if not ENDPOINT:
+            if _client is None:
+                if not CONNECTION_STRING:
                     raise RuntimeError(
-                        "Missing COSMOS_ENDPOINT — set it in App Service Configuration"
+                        "Missing COSMOS_CONNECTION_STRING — set it in App Service Configuration"
                     )
-                
-                _client = CosmosClient(
-                    url=ENDPOINT,
-                    credential=DefaultAzureCredential(),
-                )
-                log.info("Cosmos client initialised (Managed Identity)")
+                _client = CosmosClient.from_connection_string(CONNECTION_STRING)
+                log.info("Cosmos client initialised")
     return _client
 
 
@@ -83,13 +69,12 @@ def get_database():
 def get_container(container_name: str = None):
     """
     Return a cached container client.
-    Defaults to CONTAINER_NAME env var if container_name is not specified.
+    Defaults to CONTAINER_NAME env var (bpmcontent) if not specified.
     """
     name = container_name or CONTAINER_NAME
     if not name:
         raise RuntimeError(
-            "Missing CONTAINER_NAME — set it in App Service Configuration "
-            "or pass container_name explicitly"
+            "Missing CONTAINER_NAME — set it in App Service Configuration"
         )
 
     if name not in _containers:
@@ -101,14 +86,10 @@ def get_container(container_name: str = None):
     return _containers[name]
 
 
-# ---------------------------------------------------------------------------
-# Startup health check
-# ---------------------------------------------------------------------------
-
 def validate_connection() -> bool:
     """
-    Call once on app startup to fail fast if Cosmos is unreachable.
-    Uses a lightweight db.read() — no data scanned.
+    Lightweight startup check — reads database properties.
+    Call once on app boot to fail fast if Cosmos is misconfigured.
     """
     try:
         get_database().read()
@@ -120,12 +101,3 @@ def validate_connection() -> bool:
     except Exception as e:
         log.error("Cosmos DB connection failed: %s", e)
         raise
-
-
-# ---------------------------------------------------------------------------
-# Dev entrypoint
-# ---------------------------------------------------------------------------
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-    validate_connection()
