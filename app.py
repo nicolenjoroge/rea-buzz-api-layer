@@ -27,7 +27,7 @@ import os
 
 from flask import Flask
 
-from contentdraft import debug_token, get_draft, put_draft, get_versions, post_publish, post_rollback, get_media_list, get_media_url, post_discard, log_access, get_audit_log 
+from contentdraft import get_draft, put_draft, get_versions, post_publish, post_rollback, get_media_list, get_media_url, post_discard, log_access, get_audit_log 
 from cors import init_cors
 
 # ---------------------------------------------------------------------------
@@ -154,3 +154,7 @@ if __name__ == "__main__":
     port  = int(os.environ.get("PORT", 5000))
     debug = os.environ.get("FLASK_ENV", "production") == "development"
     app.run(debug=debug, port=port)
+
+
+
+
