@@ -8,6 +8,7 @@ from flask import Response, jsonify, request
 from blob import list_media, media_base_url, read_json, write_json, delete_blob
 from helpers import _now, _err
 import base64, json as _json
+from database import get_container
 
 #Log Actions
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ DRAFT    = "draft/page.json"
 MANIFEST = "manifest.json"
 AUDIT = "audit/export-log.json"
     
-    
+
 def _get_caller():
     auth_header = request.headers.get('Authorization', '')
     if auth_header.startswith('Bearer '):
@@ -49,6 +50,37 @@ def _get_caller():
            'unknown'
 
 
+def validate_user():
+    body  = request.get_json(silent=True) or {}
+    email = (body.get('email') or '').strip().lower()
+
+    if not email:
+        return _err("Missing email", 400)
+
+    try:
+        container = get_container()
+        items = list(container.query_items(
+            query="""SELECT * FROM c 
+                     WHERE c.type = 'portalUser' 
+                     AND c.email = @email 
+                     AND c.active = true""",
+            parameters=[{"name": "@email", "value": email}],
+            enable_cross_partition_query=True,
+        ))
+        if items:
+            logger.info("Access granted: %s", email)
+            return jsonify({
+                "allowed": True,
+                "name":    items[0].get("name", email),
+                "email":   email,
+            }), 200
+        else:
+            logger.warning("Access denied: %s", email)
+            return jsonify({"allowed": False}), 403
+    except Exception as e:
+        logger.error("validate_user: %s", e)
+        return _err("Validation failed", 500)
+    
 # ---------------------------------------------------------------------------
 # GET Json draft file
 # ---------------------------------------------------------------------------
